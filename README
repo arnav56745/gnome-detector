@@ -1,0 +1,167 @@
+Overview
+
+This project is a lightweight hybrid classifier that detects “GNOME confusion” in Linux-related posts by analyzing both:
+
+Desktop screenshots (image-based signal)
+
+Post title + body text (language-based signal)
+
+It is designed primarily for Reddit posts, especially beginner-focused Linux subreddits, where users often become confused after accidentally switching desktop environments or triggering GNOME Shell’s overview mode.
+
+The goal is NOT to identify GNOME usage in general, but to estimate how likely a user is confused by GNOME and how severe that confusion is.
+
+This project does not train any models. It uses a pre-trained CLIP model and deterministic heuristics.
+
+What this project does
+
+Uses OpenCLIP (ViT-B-32, OpenAI weights) to score whether an image resembles GNOME Shell
+
+Uses keyword and phrase heuristics to detect confusion language in text
+
+Combines image and text signals into a single score
+
+Classifies the result into a severity category
+
+Severity reflects user confusion impact, not certainty of GNOME detection.
+
+What this project intentionally does NOT do
+
+No web scraping
+
+No paid APIs
+
+No custom ML training
+
+No background services
+
+No moderation actions
+
+It is meant to be embedded into a Reddit bot or run manually for testing.
+
+Dependencies
+
+Required Python packages:
+
+torch
+
+open_clip_torch
+
+pillow
+
+You will also need:
+
+Python 3.10+
+
+A working PyTorch install (CPU is fine, CUDA optional)
+
+Example installation (pip):
+
+pip install torch pillow open_clip_torch
+
+On first run, model weights will be downloaded automatically.
+
+How it works (high level)
+
+Image scoring:
+
+The image is embedded using CLIP
+
+Compared against GNOME-related prompts
+
+Compared against non-GNOME desktop prompts (KDE, i3, etc.)
+
+The difference is passed through a sigmoid to produce a score between 0 and 1
+
+Text scoring:
+
+The title and body are scanned for:
+
+GNOME-related keywords
+
+Confusion phrases (e.g. “desktop is gone”, “tablet UI”)
+
+Negative phrases indicating flex posts or unixporn-style posts
+
+The final text score is normalized to [0, 1]
+
+Score combination:
+
+Image score and text score are weighted and combined
+
+If no confusion text is detected, the final score is dampened
+
+Severity classification:
+
+The final score is mapped to a severity label
+
+Severity scale
+
+Score < 0.1 : medium
+0.1 – 0.3 : high
+0.3 – 0.7 : severe
+
+0.7 : catastrophe
+
+These labels are intentionally exaggerated and are meant for internal categorization, not user-facing messaging.
+
+Why text gating exists
+
+Desktop screenshots alone are not enough to infer confusion.
+
+Minimalist desktops, tiling window managers, and unixporn-style posts often visually resemble GNOME Shell but do not indicate confusion.
+
+If the text score is zero, the final score is automatically reduced to prevent false escalation.
+
+Known limitations
+
+CLIP cannot perfectly distinguish minimalist desktops
+
+Image scores around 0.45–0.55 are normal for Linux desktops
+
+Text heuristics are English-only
+
+This is not a general-purpose desktop environment classifier
+
+These limitations are intentional trade-offs to avoid overengineering.
+
+How to run
+
+Run the script directly:
+
+python project.py
+
+You will be prompted for:
+
+Image filename (local path)
+
+Reddit post title
+
+Reddit post body
+
+The script will output:
+
+Image score
+
+Text score
+
+Final combined score
+
+Severity label
+
+Typical use cases
+
+Filtering Reddit posts for GNOME confusion
+
+Auto-crossposting confused users to a private help subreddit
+
+Offline testing of GNOME-related screenshots
+
+Experimenting with hybrid ML + rule-based systems
+
+Warnings you may see
+
+Hugging Face unauthenticated download warnings
+
+QuickGELU mismatch warnings
+
+These are normal, harmless, and do not affect correctness.
